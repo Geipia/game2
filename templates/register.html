@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Inscription Joueur</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Inscription</h2>
+        <form action="/register" method="post" enctype="multipart/form-data">
+            <input type="text" name="name" placeholder="Nom" required><br>
+            <input type="email" name="email" placeholder="Email" required><br>
+            <input type="password" name="password" placeholder="Mot de passe" required><br>
+            <input type="file" name="photo" accept="image/*" required><br>
+            <button type="submit">Créer le compte</button>
+        </form>
+        <a href="/">Retour</a>
+    </div>
+</body>
+</html>

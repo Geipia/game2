@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Jeu Compétitif</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/script.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Compétition Hebdo</h1>
+        <p style="font-size:1.1em;">Affronte d'autres joueurs dans des duels éliminatoires chaque semaine.<br>
+        Inscris-toi, connecte-toi, puis clique sur <b>Participer</b> pour payer et rejoindre la compétition.<br>
+        Le dernier survivant remporte la cagnotte !</p>
+        <div class="cagnotte">Cagnotte : <span id="cagnotte">{{ cagnotte }} €</span></div>
+        {% if not user_id %}
+            <a href="/login"><button>Connexion</button></a>
+            <a href="/register"><button>Inscription</button></a>
+        {% else %}
+            <script async
+            src="https://js.stripe.com/v3/buy-button.js">
+            </script>
+
+            <stripe-buy-button
+            buy-button-id="buy_btn_1RlvbECOWsHWoBEGK3O2YxKI"
+            publishable-key="pk_test_51Rb21ICOWsHWoBEGgfvfQyHIMU7kFYHbvX6zMV0uLwihH959xhgD3HYVzSbfHr6mI2pD4Nlt8kPS2dHxFZW3PQw900LJ7rQz9w"
+            >
+            </stripe-buy-button>
+            {% if user_is_registered %}
+                <p>Tu es déjà inscrit à la compétition.</p>
+                <a href="/game"><button>Accéder au jeu</button></a>
+            {% else %}
+                <form action="/register" method="post">
+                    <button type="submit" style="background:#28a745;color:white;">Participer</button>
+                </form>
+            {% endif %}
+            {% if duel_opponent %}
+                <div>
+                    <p>Ton adversaire : <b>{{ duel_opponent.name }}</b></p>
+                    <img src="/{{ duel_opponent.photo_path }}" class="player-photo" style="width:100px;">
+                </div>
+                <form method="post">
+                    <button type="submit">Jouer le duel réflexe</button>
+                </form>
+            {% elif winner %}
+                <div style="color:lime;font-size:1.5em;">Tu as gagné ce duel !</div>
+            {% else %}
+                <a href="/game"><button style="background:#ffd700;color:#222;">Accéder au jeu</button></a>
+            {% endif %}
+        {% endif %}
+    </div>
+</body>
+</html>

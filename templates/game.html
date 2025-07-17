@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Jeu en Direct</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/script.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h2>Joueurs en jeu</h2>
+        <div id="players">
+            {% for user in users %}
+                <img src="/{{ user.photo_path }}" class="player-photo" id="player_{{ user.id }}" {% if not user.is_alive %}class="eliminated"{% endif %}>
+            {% endfor %}
+        </div>
+        <div class="cagnotte">Cagnotte : <span id="cagnotte">{{ cagnotte }} €</span></div>
+        <a href="/logout"><button>Déconnexion</button></a>
+        <div id="game-area">
+            <h3>Mini-jeu réflexe</h3>
+            {% if winner %}
+                <div style="color:lime;font-size:1.5em;">Vous avez gagné ce duel !</div>
+            {% elif duel_opponent %}
+                <div>
+                    <p>Votre adversaire : <b>{{ duel_opponent.name }}</b></p>
+                    <img src="/{{ duel_opponent.photo_path }}" class="player-photo" style="width:100px;">
+                </div>
+                <form method="post">
+                    <button type="submit">Jouer le duel réflexe</button>
+                </form>
+            {% elif users|length == 1 %}
+                <div style="color:gold;font-size:1.5em;">Dernier survivant !</div>
+            {% else %}
+                <div>Aucun adversaire disponible pour le moment.</div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

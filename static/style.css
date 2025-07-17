@@ -1,0 +1,43 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #222;
+    color: #fff;
+    margin: 0;
+    padding: 0;
+}
+.container {
+    max-width: 600px;
+    margin: 40px auto;
+    background: #333;
+    border-radius: 10px;
+    padding: 30px;
+    box-shadow: 0 0 20px #0008;
+}
+input, button {
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    border: none;
+}
+.player-photo {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #fff;
+    margin: 5px;
+}
+.eliminated {
+    filter: grayscale(1) blur(2px);
+    border: 2px solid red;
+    animation: zoomOut 0.5s;
+}
+@keyframes zoomOut {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.2); }
+}
+.cagnotte {
+    font-size: 2em;
+    color: #ffd700;
+    margin: 20px 0;
+}

@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Hall VR</title>
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <a-scene>
+        <a-sky color="#222"></a-sky>
+        {% for user in users %}
+            <a-image src="/{{ user.photo_path }}" position="{{ loop.index0 * 2 }} 2 -5" width="1.5" height="1.5"></a-image>
+        {% endfor %}
+        <a-text value="Cagnotte : {{ cagnotte }} €" position="0 4 -5" color="#ffd700" width="6"></a-text>
+    </a-scene>
+</body>
+</html>
