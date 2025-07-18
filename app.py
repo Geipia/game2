@@ -42,10 +42,13 @@ def index():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        name = request.form['name']
-        email = request.form['email']
-        password = request.form['password']
-        photo = request.files['photo']
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '')
+        photo = request.files.get('photo')
+        if not (name and email and password and photo):
+            flash('Tous les champs sont requis.', 'danger')
+            return render_template('register.html')
         password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
         filename = secure_filename(photo.filename)
         photo_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -69,8 +72,11 @@ def register():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '')
+        if not (email and password):
+            flash('Email et mot de passe requis.', 'danger')
+            return render_template('login.html')
         conn = get_db()
         c = conn.cursor()
         c.execute('SELECT id, password_hash, is_ready FROM users WHERE email = ?', (email,))
