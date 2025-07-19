@@ -35,17 +35,22 @@ def index():
     cagnotte = count
     user_id = session.get('user_id')
     is_ready = session.get('is_ready', 0)
-    return render_template('index.html', cagnotte=cagnotte, user_id=user_id, is_ready=is_ready)
+    user_is_registered = bool(is_ready)
+    return render_template('index.html', cagnotte=cagnotte, user_id=user_id,
+                           is_ready=is_ready, user_is_registered=user_is_registered)
 
 
 # Inscription
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        name = request.form['name']
-        email = request.form['email']
-        password = request.form['password']
-        photo = request.files['photo']
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '')
+        photo = request.files.get('photo')
+        if not (name and email and password and photo):
+            flash('Tous les champs sont requis.', 'danger')
+            return render_template('register.html')
         password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
         filename = secure_filename(photo.filename)
         photo_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -69,8 +74,11 @@ def register():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '')
+        if not (email and password):
+            flash('Email et mot de passe requis.', 'danger')
+            return render_template('login.html')
         conn = get_db()
         c = conn.cursor()
         c.execute('SELECT id, password_hash, is_ready FROM users WHERE email = ?', (email,))
@@ -92,16 +100,40 @@ def logout():
     return redirect(url_for('index'))
 
 
+# Après paiement, redirige l'utilisateur vers la page de jeu
+@app.route('/payment_complete')
+def payment_complete():
+    user_id = session.get('user_id')
+    if user_id:
+        conn = get_db()
+        c = conn.cursor()
+        c.execute('SELECT is_ready FROM users WHERE id = ?', (user_id,))
+        row = c.fetchone()
+        if row and row[0]:
+            session['is_ready'] = 1
+            flash('Paiement confirmé. Bienvenue dans le jeu !', 'success')
+            return redirect(url_for('game'))
+    flash('Paiement enregistré. Connectez-vous pour jouer.', 'info')
+    return redirect(url_for('index'))
+
+
 # Jeu (protégé)
 from functools import wraps
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
+        user_id = session.get('user_id')
+        if not user_id:
             flash('Connectez-vous pour accéder au jeu.', 'warning')
             return redirect(url_for('login'))
-        if not session.get('is_ready', 0):
-            flash('Vous devez payer pour jouer. Utilisez le bouton Stripe sur la page d’accueil.', 'danger')
+        conn = get_db()
+        c = conn.cursor()
+        c.execute('SELECT is_ready FROM users WHERE id = ?', (user_id,))
+        row = c.fetchone()
+        is_ready = row[0] if row else 0
+        session['is_ready'] = is_ready
+        if not is_ready:
+            flash('Vous devez payer pour jouer. Utilisez le bouton Stripe sur la page d\'accueil.', 'danger')
             return redirect(url_for('index'))
         return f(*args, **kwargs)
     return decorated_function
