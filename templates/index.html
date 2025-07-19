@@ -25,15 +25,15 @@
             <stripe-buy-button
             buy-button-id="buy_btn_1RlvbECOWsHWoBEGK3O2YxKI"
             publishable-key="pk_test_51Rb21ICOWsHWoBEGgfvfQyHIMU7kFYHbvX6zMV0uLwihH959xhgD3HYVzSbfHr6mI2pD4Nlt8kPS2dHxFZW3PQw900LJ7rQz9w"
+            client-reference-id="{{ user_id }}"
+            redirect-url="{{ url_for('payment_complete', _external=True) }}"
             >
             </stripe-buy-button>
             {% if user_is_registered %}
                 <p>Tu es déjà inscrit à la compétition.</p>
                 <a href="/game"><button>Accéder au jeu</button></a>
             {% else %}
-                <form action="/register" method="post">
-                    <button type="submit" style="background:#28a745;color:white;">Participer</button>
-                </form>
+                <p>Clique sur le bouton Stripe pour payer et rejoindre la compétition.</p>
             {% endif %}
             {% if duel_opponent %}
                 <div>

@@ -5,6 +5,7 @@ from flask_socketio import SocketIO, emit
 from werkzeug.utils import secure_filename
 import os
 import sqlite3
+import stripe
 from config import Config
 from utils.db import get_db, init_db, close_connection
 from utils.scheduler import start_scheduler
@@ -17,6 +18,7 @@ Session(app)
 bcrypt = Bcrypt(app)
 socketio = SocketIO(app, manage_session=False)
 app.register_blueprint(stripe_webhook_bp)
+stripe.api_key = Config.STRIPE_SECRET_KEY
 
 @app.before_request
 def setup():
@@ -35,17 +37,22 @@ def index():
     cagnotte = count
     user_id = session.get('user_id')
     is_ready = session.get('is_ready', 0)
-    return render_template('index.html', cagnotte=cagnotte, user_id=user_id, is_ready=is_ready)
+    user_is_registered = bool(is_ready)
+    return render_template('index.html', cagnotte=cagnotte, user_id=user_id,
+                           is_ready=is_ready, user_is_registered=user_is_registered)
 
 
 # Inscription
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        name = request.form['name']
-        email = request.form['email']
-        password = request.form['password']
-        photo = request.files['photo']
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '')
+        photo = request.files.get('photo')
+        if not (name and email and password and photo):
+            flash('Tous les champs sont requis.', 'danger')
+            return render_template('register.html')
         password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
         filename = secure_filename(photo.filename)
         photo_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -69,8 +76,11 @@ def register():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '')
+        if not (email and password):
+            flash('Email et mot de passe requis.', 'danger')
+            return render_template('login.html')
         conn = get_db()
         c = conn.cursor()
         c.execute('SELECT id, password_hash, is_ready FROM users WHERE email = ?', (email,))
@@ -92,16 +102,51 @@ def logout():
     return redirect(url_for('index'))
 
 
+# Après paiement, redirige l'utilisateur vers la page de jeu
+@app.route('/payment_complete')
+def payment_complete():
+    """Mark the paying user as ready and send them to the game."""
+    user_id = session.get('user_id')
+    # If the session is lost, try retrieving the user from Stripe
+    if not user_id:
+        session_id = request.args.get('session_id')
+        if session_id:
+            try:
+                checkout = stripe.checkout.Session.retrieve(session_id)
+                user_id = checkout.get('client_reference_id')
+                if user_id:
+                    session['user_id'] = int(user_id)
+            except Exception:
+                pass
+    if user_id:
+        conn = get_db()
+        c = conn.cursor()
+        c.execute('UPDATE users SET is_ready = 1 WHERE id = ?', (user_id,))
+        conn.commit()
+        session['is_ready'] = 1
+        flash('Paiement confirmé. Bienvenue dans le jeu !', 'success')
+        return redirect(url_for('game'))
+    flash('Paiement enregistré. Connectez-vous pour jouer.', 'info')
+    return redirect(url_for('index'))
+
+
 # Jeu (protégé)
 from functools import wraps
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
+        user_id = session.get('user_id')
+        if not user_id:
             flash('Connectez-vous pour accéder au jeu.', 'warning')
             return redirect(url_for('login'))
-        if not session.get('is_ready', 0):
-            flash('Vous devez payer pour jouer. Utilisez le bouton Stripe sur la page d’accueil.', 'danger')
+        conn = get_db()
+        c = conn.cursor()
+        c.execute('SELECT is_ready FROM users WHERE id = ?', (user_id,))
+        row = c.fetchone()
+        is_ready = row[0] if row else 0
+        session['is_ready'] = is_ready
+        if not is_ready:
+            flash('Vous devez payer pour jouer. Utilisez le bouton Stripe sur la page d\'accueil.', 'danger')
             return redirect(url_for('index'))
         return f(*args, **kwargs)
     return decorated_function
