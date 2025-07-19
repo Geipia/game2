@@ -100,6 +100,23 @@ def logout():
     return redirect(url_for('index'))
 
 
+# Après paiement, redirige l'utilisateur vers la page de jeu
+@app.route('/payment_complete')
+def payment_complete():
+    user_id = session.get('user_id')
+    if user_id:
+        conn = get_db()
+        c = conn.cursor()
+        c.execute('SELECT is_ready FROM users WHERE id = ?', (user_id,))
+        row = c.fetchone()
+        if row and row[0]:
+            session['is_ready'] = 1
+            flash('Paiement confirmé. Bienvenue dans le jeu !', 'success')
+            return redirect(url_for('game'))
+    flash('Paiement enregistré. Connectez-vous pour jouer.', 'info')
+    return redirect(url_for('index'))
+
+
 # Jeu (protégé)
 from functools import wraps
 def login_required(f):
