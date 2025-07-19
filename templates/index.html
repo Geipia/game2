@@ -33,9 +33,7 @@
                 <p>Tu es déjà inscrit à la compétition.</p>
                 <a href="/game"><button>Accéder au jeu</button></a>
             {% else %}
-                <form action="/register" method="post">
-                    <button type="submit" style="background:#28a745;color:white;">Participer</button>
-                </form>
+                <p>Clique sur le bouton Stripe pour payer et rejoindre la compétition.</p>
             {% endif %}
             {% if duel_opponent %}
                 <div>

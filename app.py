@@ -103,16 +103,16 @@ def logout():
 # Après paiement, redirige l'utilisateur vers la page de jeu
 @app.route('/payment_complete')
 def payment_complete():
+    """Mark the logged-in user as paid and send them to the game."""
     user_id = session.get('user_id')
     if user_id:
         conn = get_db()
         c = conn.cursor()
-        c.execute('SELECT is_ready FROM users WHERE id = ?', (user_id,))
-        row = c.fetchone()
-        if row and row[0]:
-            session['is_ready'] = 1
-            flash('Paiement confirmé. Bienvenue dans le jeu !', 'success')
-            return redirect(url_for('game'))
+        c.execute('UPDATE users SET is_ready = 1 WHERE id = ?', (user_id,))
+        conn.commit()
+        session['is_ready'] = 1
+        flash('Paiement confirmé. Bienvenue dans le jeu !', 'success')
+        return redirect(url_for('game'))
     flash('Paiement enregistré. Connectez-vous pour jouer.', 'info')
     return redirect(url_for('index'))
 
